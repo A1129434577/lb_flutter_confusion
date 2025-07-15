@@ -30,6 +30,11 @@ class ReadmePage extends StatelessWidget {
         3.不需要导入任何库（避免需要手动导入库）；
         4.尽量复杂点。
         
+        使用方法：
+        1.选择需要混淆的文件夹或单个.dart文件
+        比如要混淆项目根根目录lib下的所有文件：~/Desktop/confusion_test_demo/lib；
+        2.点击开始混淆即可。
+        
         注意：混淆不可逆，混淆后代码可读性会很差，所以建议打包上架前拷贝工程，仅打包混淆使用。
         ''',
           style: TextStyle(
