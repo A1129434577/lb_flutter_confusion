@@ -198,7 +198,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'LB Flutter Confusion',
+          'Flutter Confusion',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
