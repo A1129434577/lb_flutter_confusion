@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lb_flutter_confusion/readme_page.dart';
+import 'package:path_provider/path_provider.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -26,19 +27,53 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _readConfuseCode();
+    _readAndCacheConfuseCode();
   }
 
-  ///读取垃圾代码
-  Future _readConfuseCode() async {
-    String junkClassPath = 'assets${Platform.pathSeparator}lb_confuse_class.dart';
-    rootBundle.loadString(junkClassPath).then((junkClassCode) {
-      _confuseClassTextController.text = junkClassCode;
-    });
+  String? _documentsPath;
+  Future<String> get documentsPath async {
+    _documentsPath ??= (await getApplicationDocumentsDirectory()).path;
+    return _documentsPath!;
+  }
 
-    String junkMethodsPath = 'assets${Platform.pathSeparator}lb_confuse_methods.dart';
-    rootBundle.loadString(junkMethodsPath).then((junkMethodCode) {
-      _confuseMethodTextController.text = junkMethodCode;
+  String? _junkClassFilePath;
+  Future<String> get junkClassFilePath async {
+    _junkClassFilePath ??= '${await documentsPath+Platform.pathSeparator}lb_confuse_class.dart';
+    return _junkClassFilePath!;
+  }
+
+  String? _junkMethodsFilePath;
+  Future<String> get junkMethodsFilePath async {
+    _junkMethodsFilePath ??= '${await documentsPath+Platform.pathSeparator}lb_confuse_methods.dart';
+    return _junkMethodsFilePath!;
+  }
+
+
+  ///读取垃圾代码
+  Future _readAndCacheConfuseCode() async {
+    File junkClassFile = File(await junkClassFilePath);
+    File junkMethodsFile = File(await junkMethodsFilePath);
+    if(junkClassFile.existsSync() == false){
+      junkClassFile.createSync();
+      String junkClassPath = 'assets${Platform.pathSeparator}lb_confuse_class.dart';
+      String junkClassCode = await rootBundle.loadString(junkClassPath);
+      junkClassFile.writeAsStringSync(junkClassCode);
+    }
+    if(junkMethodsFile.existsSync() == false){
+      junkMethodsFile.createSync();
+      String junkMethodsPath = 'assets${Platform.pathSeparator}lb_confuse_methods.dart';
+      String junkMethodCode = await rootBundle.loadString(junkMethodsPath);
+      junkMethodsFile.writeAsStringSync(junkMethodCode);
+    }
+
+    _confuseClassTextController.text = junkClassFile.readAsStringSync();
+    _confuseMethodTextController.text = junkMethodsFile.readAsStringSync();
+
+    _confuseClassTextController.addListener(() async {
+      junkClassFile.writeAsStringSync(_confuseClassTextController.text);
+    });
+    _confuseMethodTextController.addListener((){
+      junkMethodsFile.writeAsStringSync(_confuseMethodTextController.text);
     });
   }
 
@@ -272,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         Expanded(
                           child: ConfuseTextFiled(
-                            hintText: '请输入垃圾类列表，并使用@pragma(\'vm:entry-point\')注解',
+                            hintText: '请输入垃圾方法列表，并使用@pragma(\'vm:entry-point\')注解',
                             controller: _confuseMethodTextController,
                           ),
                         )
@@ -378,7 +413,7 @@ class ConfuseTextFiled extends StatelessWidget {
           fontWeight: FontWeight.w300,
         ),
         decoration: InputDecoration(
-          contentPadding: EdgeInsets.symmetric(horizontal:8),
+          contentPadding: EdgeInsets.symmetric(horizontal:8, vertical: 8),
           suffixIcon: suffixIcon,
           hintText: hintText,
           counterText: '', //隐藏字数统计

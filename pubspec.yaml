@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   analyzer:
   file_picker:
+  path_provider:
 
 
 dev_dependencies:

@@ -1,9 +1,8 @@
 /*
-私有复杂dart方法
-1.方法名没有任何意义；
+私有dart方法
+1.必须加上@pragma('vm:entry-point')注解（防止打包被编译器删除）；
 2.不需要导入任何库；
-3.尽量复杂点；
-4.加上@pragma('vm:entry-point')注解。
+3.尽量复杂点.
  */
 @pragma('vm:entry-point')
 Map<String, dynamic> _zxq(List<dynamic> input, [int salt = 0x55AA]) {
