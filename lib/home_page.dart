@@ -45,12 +45,12 @@ class _HomePageState extends State<HomePage> {
     File? junkClassFile = (await DefaultCacheManager().getFileFromCache(junkClassCodeCacheKey))?.file;
     File? junkMethodsFile = (await DefaultCacheManager().getFileFromCache(junkMethodCodeCacheKey))?.file;
     if(junkClassFile == null || force){
-      String junkClassPath = 'assets${Platform.pathSeparator}lb_confuse_class.dart';
+      String junkClassPath = 'assets/lb_confuse_class.dart';
       String junkClassCode = await rootBundle.loadString(junkClassPath);
       junkClassFile = await DefaultCacheManager().putFile(junkClassCodeCacheKey, utf8.encode(junkClassCode));
     }
     if(junkMethodsFile == null || force){
-      String junkMethodsPath = 'assets${Platform.pathSeparator}lb_confuse_methods.dart';
+      String junkMethodsPath = 'assets/lb_confuse_methods.dart';
       String junkMethodCode = await rootBundle.loadString(junkMethodsPath);
       junkMethodsFile = await DefaultCacheManager().putFile(junkMethodCodeCacheKey, utf8.encode(junkMethodCode));
     }
