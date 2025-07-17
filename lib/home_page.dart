@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:analyzer/dart/analysis/utilities.dart';
@@ -7,8 +8,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:lb_flutter_confusion/readme_page.dart';
-import 'package:path_provider/path_provider.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -27,54 +28,35 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _confuseClassTextController.addListener(() {
+      DefaultCacheManager().putFile(junkClassCodeCacheKey, utf8.encode(_confuseClassTextController.text));
+    });
+    _confuseMethodTextController.addListener(() {
+      DefaultCacheManager().putFile(junkMethodCodeCacheKey, utf8.encode(_confuseMethodTextController.text));
+    });
     _readAndCacheConfuseCode();
   }
 
-  String? _documentsPath;
-  Future<String> get documentsPath async {
-    _documentsPath ??= (await getApplicationDocumentsDirectory()).path;
-    return _documentsPath!;
-  }
-
-  String? _junkClassFilePath;
-  Future<String> get junkClassFilePath async {
-    _junkClassFilePath ??= '${await documentsPath+Platform.pathSeparator}lb_confuse_class.dart';
-    return _junkClassFilePath!;
-  }
-
-  String? _junkMethodsFilePath;
-  Future<String> get junkMethodsFilePath async {
-    _junkMethodsFilePath ??= '${await documentsPath+Platform.pathSeparator}lb_confuse_methods.dart';
-    return _junkMethodsFilePath!;
-  }
-
+  static final junkClassCodeCacheKey = 'lb_confuse_class';
+  static final junkMethodCodeCacheKey = 'lb_confuse_methods';
 
   ///读取垃圾代码
-  Future _readAndCacheConfuseCode() async {
-    File junkClassFile = File(await junkClassFilePath);
-    File junkMethodsFile = File(await junkMethodsFilePath);
-    if(junkClassFile.existsSync() == false){
-      junkClassFile.createSync();
+  Future _readAndCacheConfuseCode({bool force=false}) async {
+    File? junkClassFile = (await DefaultCacheManager().getFileFromCache(junkClassCodeCacheKey))?.file;
+    File? junkMethodsFile = (await DefaultCacheManager().getFileFromCache(junkMethodCodeCacheKey))?.file;
+    if(junkClassFile == null || force){
       String junkClassPath = 'assets${Platform.pathSeparator}lb_confuse_class.dart';
       String junkClassCode = await rootBundle.loadString(junkClassPath);
-      junkClassFile.writeAsStringSync(junkClassCode);
+      junkClassFile = await DefaultCacheManager().putFile(junkClassCodeCacheKey, utf8.encode(junkClassCode));
     }
-    if(junkMethodsFile.existsSync() == false){
-      junkMethodsFile.createSync();
+    if(junkMethodsFile == null || force){
       String junkMethodsPath = 'assets${Platform.pathSeparator}lb_confuse_methods.dart';
       String junkMethodCode = await rootBundle.loadString(junkMethodsPath);
-      junkMethodsFile.writeAsStringSync(junkMethodCode);
+      junkMethodsFile = await DefaultCacheManager().putFile(junkMethodCodeCacheKey, utf8.encode(junkMethodCode));
     }
 
     _confuseClassTextController.text = junkClassFile.readAsStringSync();
     _confuseMethodTextController.text = junkMethodsFile.readAsStringSync();
-
-    _confuseClassTextController.addListener(() async {
-      junkClassFile.writeAsStringSync(_confuseClassTextController.text);
-    });
-    _confuseMethodTextController.addListener((){
-      junkMethodsFile.writeAsStringSync(_confuseMethodTextController.text);
-    });
   }
 
   ///开始混淆
@@ -240,8 +222,28 @@ class _HomePageState extends State<HomePage> {
             color: Colors.black,
           ),
         ),
+        leading: CupertinoButton(
+          sizeStyle: CupertinoButtonSize.small,
+          padding: EdgeInsets.only(left: 15),
+          alignment: Alignment.centerLeft,
+          onPressed: (){
+            _readAndCacheConfuseCode(force: true);
+          },
+          child: Text(
+            '还原',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w300,
+              color: Colors.black,
+            ),
+          ),
+        ),
         actions: [
           CupertinoButton(
+            sizeStyle: CupertinoButtonSize.small,
+            padding: EdgeInsets.only(right: 15),
+            alignment: Alignment.centerRight,
             onPressed: (){
               Navigator.push(
                 context,
