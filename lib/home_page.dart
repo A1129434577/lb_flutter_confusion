@@ -121,113 +121,114 @@ class _HomePageState extends State<HomePage> {
     ///向目标.dart文件插入垃圾代码
     Random random = Random();
     //方式1：向非注解类、非注解方法、非getter和setter等方法前面添加垃圾代码
-    for(File file in dartFileList){
-      ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
-      ///找到可以添加垃圾代码的那一行代码申明：类声明的前面、方法申明的前面。
-      bool isAlreadyConfused = false;
-      List<String> targetClassLines = [];
-      List<String> targetMethodLines = [];
-      String fileCodeString = await file.readAsString();
-      final parseResult = parseString(content: fileCodeString);
-      final compilationUnit = parseResult.unit;
-      // 遍历所有顶级声明
-      for (final declaration in compilationUnit.declarations) {
-        if (declaration is ClassDeclaration) {
-          //发现类
-          // print('    发现类: ${declaration.name}');
-          String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
-          String? findClassString = junkClassList.where((e){
-            return e.contains(targetClassBody);
-          }).toList().firstOrNull;
-          if(findClassString != null){
-            isAlreadyConfused = true;
-            break;
-          }
-          String targetClassLine = fileCodeString.substring(declaration.classKeyword.charOffset, declaration.leftBracket.charEnd);
-          targetClassLines.add(targetClassLine);
-          // 遍历类成员
-          for (final member in declaration.members) {
-            if (member is MethodDeclaration) {
-              //发现方法
-              // print('    发现方法: ${member.name}');
-              String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
-              String? findMethodString = junkMethodList.where((e){
-                return e.contains(targetMethodBody);
-              }).toList().firstOrNull;
-              if(findMethodString != null){
-                isAlreadyConfused = true;
-                break;
-              }
-              int? methodStart, methodEnd;
-              if(member.modifierKeyword != null){
-                methodStart = member.modifierKeyword!.offset;
-              }
-              else if(member.returnType != null){
-                methodStart = member.returnType!.offset;
-              }
-              if(member.parameters != null){
-                methodEnd = member.parameters!.rightParenthesis.charEnd;
-              }
-
-              if(methodStart!=null && methodEnd!=null){
-                String targetMethodLine = fileCodeString.substring(methodStart, methodEnd);
-                targetMethodLines.add(targetMethodLine);
-              }
-            }
-          }
-        } else if (declaration is FunctionDeclaration) {
-          //发现顶级函数
-          // print('发现顶级函数: ${declaration.name}');
-        }
-      }
-
-      if(isAlreadyConfused){
-        break;
-      }
-
-      //已经使用过的index(防止同一文件中植入相同类或方法)
-      List<int> randomClassIndexList = [];
-      List<int> randomMethodIndexList = [];
-      ///再次遍历代码行，给具体行添加垃圾代码
-      List<String> codeLines = file.readAsLinesSync();
-      List<String> newCodeLines = [];
-      for(String line in codeLines){
-        int index = codeLines.indexOf(line);
-        int previousIndex = index-1;
-        if(previousIndex>-1 && (codeLines[previousIndex].contains('@')==false)){
-          if(targetClassLines.contains(line.trim())){
-            if(randomClassIndexList.length<junkClassList.length) {
-              int randomIndex;
-              do{
-                randomIndex = random.nextInt(junkClassList.length);
-              }while(randomClassIndexList.contains(randomIndex));
-              randomClassIndexList.add(randomIndex);
-              line = '${junkClassList[randomIndex]}$line';
-            }
-          }
-          else {
-            String tempLine = line.trim();
-            int i = tempLine.lastIndexOf(')');
-            if(i>-1) {
-              String l = tempLine.substring(0, i+1);
-              if (targetMethodLines.contains(l)) {
-                if(randomMethodIndexList.length<junkMethodList.length) {
-                  int randomIndex;
-                  do{
-                    randomIndex = random.nextInt(junkMethodList.length);
-                  }while(randomMethodIndexList.contains(randomIndex));
-                  randomMethodIndexList.add(randomIndex);
-                  line = '${junkMethodList[randomIndex]}$line';
-                }
-              }
-            }
-          }
-        }
-        newCodeLines.add(line);
-      }
-      ///重新写入文件
-      file.writeAsStringSync(newCodeLines.join("\n"));
-    }
+    //这种方式添加的垃圾代码由于原代码有注释的情况不好完全还原，所以用方式2混淆
+    // for(File file in dartFileList){
+    //   ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
+    //   ///找到可以添加垃圾代码的那一行代码申明：类声明的前面、方法申明的前面。
+    //   bool isAlreadyConfused = false;
+    //   List<String> targetClassLines = [];
+    //   List<String> targetMethodLines = [];
+    //   String fileCodeString = await file.readAsString();
+    //   final parseResult = parseString(content: fileCodeString);
+    //   final compilationUnit = parseResult.unit;
+    //   // 遍历所有顶级声明
+    //   for (final declaration in compilationUnit.declarations) {
+    //     if (declaration is ClassDeclaration) {
+    //       //发现类
+    //       // print('    发现类: ${declaration.name}');
+    //       String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+    //       String? findClassString = junkClassList.where((e){
+    //         return e.contains(targetClassBody);
+    //       }).toList().firstOrNull;
+    //       if(findClassString != null){
+    //         isAlreadyConfused = true;
+    //         break;
+    //       }
+    //       String targetClassLine = fileCodeString.substring(declaration.classKeyword.charOffset, declaration.leftBracket.charEnd);
+    //       targetClassLines.add(targetClassLine);
+    //       // 遍历类成员
+    //       for (final member in declaration.members) {
+    //         if (member is MethodDeclaration) {
+    //           //发现方法
+    //           // print('    发现方法: ${member.name}');
+    //           String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+    //           String? findMethodString = junkMethodList.where((e){
+    //             return e.contains(targetMethodBody);
+    //           }).toList().firstOrNull;
+    //           if(findMethodString != null){
+    //             isAlreadyConfused = true;
+    //             break;
+    //           }
+    //           int? methodStart, methodEnd;
+    //           if(member.modifierKeyword != null){
+    //             methodStart = member.modifierKeyword!.offset;
+    //           }
+    //           else if(member.returnType != null){
+    //             methodStart = member.returnType!.offset;
+    //           }
+    //           if(member.parameters != null){
+    //             methodEnd = member.parameters!.rightParenthesis.charEnd;
+    //           }
+    //
+    //           if(methodStart!=null && methodEnd!=null){
+    //             String targetMethodLine = fileCodeString.substring(methodStart, methodEnd);
+    //             targetMethodLines.add(targetMethodLine);
+    //           }
+    //         }
+    //       }
+    //     } else if (declaration is FunctionDeclaration) {
+    //       //发现顶级函数
+    //       // print('发现顶级函数: ${declaration.name}');
+    //     }
+    //   }
+    //
+    //   if(isAlreadyConfused){
+    //     break;
+    //   }
+    //
+    //   //已经使用过的index(防止同一文件中植入相同类或方法)
+    //   List<int> randomClassIndexList = [];
+    //   List<int> randomMethodIndexList = [];
+    //   ///再次遍历代码行，给具体行添加垃圾代码
+    //   List<String> codeLines = file.readAsLinesSync();
+    //   List<String> newCodeLines = [];
+    //   for(String line in codeLines){
+    //     int index = codeLines.indexOf(line);
+    //     int previousIndex = index-1;
+    //     if(previousIndex>-1 && (codeLines[previousIndex].contains('@')==false)){
+    //       if(targetClassLines.contains(line.trim())){
+    //         if(randomClassIndexList.length<junkClassList.length) {
+    //           int randomIndex;
+    //           do{
+    //             randomIndex = random.nextInt(junkClassList.length);
+    //           }while(randomClassIndexList.contains(randomIndex));
+    //           randomClassIndexList.add(randomIndex);
+    //           line = '${junkClassList[randomIndex]}$line';
+    //         }
+    //       }
+    //       else {
+    //         String tempLine = line.trim();
+    //         int i = tempLine.lastIndexOf(')');
+    //         if(i>-1) {
+    //           String l = tempLine.substring(0, i+1);
+    //           if (targetMethodLines.contains(l)) {
+    //             if(randomMethodIndexList.length<junkMethodList.length) {
+    //               int randomIndex;
+    //               do{
+    //                 randomIndex = random.nextInt(junkMethodList.length);
+    //               }while(randomMethodIndexList.contains(randomIndex));
+    //               randomMethodIndexList.add(randomIndex);
+    //               line = '${junkMethodList[randomIndex]}$line';
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //     newCodeLines.add(line);
+    //   }
+    //   ///重新写入文件
+    //   file.writeAsStringSync(newCodeLines.join("\n"));
+    // }
 
     //方式2：向所有类和方法前面添加垃圾代码
     for(File file in dartFileList){
@@ -276,7 +277,7 @@ class _HomePageState extends State<HomePage> {
       }
 
       if(isAlreadyConfused){
-        break;
+        continue;
       }
 
       ///再次遍历代码行，给具体行添加垃圾代码
