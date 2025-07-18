@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:lb_flutter_confusion/readme_page.dart';
 
+const String annotateString = '@pragma(\'vm:entry-point\')';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,6 +21,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const junkClassCodeCacheKey = 'lb_confuse_class';
+  static const junkMethodCodeCacheKey = 'lb_confuse_methods';
+
   final TextEditingController _confuseClassTextController = TextEditingController();
   final TextEditingController _confuseMethodTextController = TextEditingController();
   final TextEditingController _filePathTextController = TextEditingController();
@@ -37,19 +41,16 @@ class _HomePageState extends State<HomePage> {
     _readAndCacheConfuseCode();
   }
 
-  static final junkClassCodeCacheKey = 'lb_confuse_class';
-  static final junkMethodCodeCacheKey = 'lb_confuse_methods';
-
   ///读取垃圾代码
-  Future _readAndCacheConfuseCode({bool force=false}) async {
+  Future _readAndCacheConfuseCode({bool resetClass=false, bool resetMethod=false}) async {
     File? junkClassFile = (await DefaultCacheManager().getFileFromCache(junkClassCodeCacheKey))?.file;
     File? junkMethodsFile = (await DefaultCacheManager().getFileFromCache(junkMethodCodeCacheKey))?.file;
-    if(junkClassFile == null || force){
+    if(junkClassFile == null || resetClass){
       String junkClassPath = 'assets/lb_confuse_class.dart';
       String junkClassCode = await rootBundle.loadString(junkClassPath);
       junkClassFile = await DefaultCacheManager().putFile(junkClassCodeCacheKey, utf8.encode(junkClassCode));
     }
-    if(junkMethodsFile == null || force){
+    if(junkMethodsFile == null || resetMethod){
       String junkMethodsPath = 'assets/lb_confuse_methods.dart';
       String junkMethodCode = await rootBundle.loadString(junkMethodsPath);
       junkMethodsFile = await DefaultCacheManager().putFile(junkMethodCodeCacheKey, utf8.encode(junkMethodCode));
@@ -95,7 +96,7 @@ class _HomePageState extends State<HomePage> {
     List<String> junkClassCodeLines = _confuseClassTextController.text.split('\n');
     String junkClassString = '';
     for(String line in junkClassCodeLines){
-      if(line == '@pragma(\'vm:entry-point\')'){
+      if(line == annotateString){
         junkClassList.add(junkClassString);
         junkClassString = '';
       }
@@ -108,7 +109,7 @@ class _HomePageState extends State<HomePage> {
     List<String> junkMethodCodeLines = _confuseMethodTextController.text.split('\n');
     String junkMethodString = '';
     for(String line in junkMethodCodeLines){
-      if(line == '@pragma(\'vm:entry-point\')'){
+      if(line == annotateString){
         junkMethodList.add(junkMethodString);
         junkMethodString = '';
       }
@@ -119,9 +120,11 @@ class _HomePageState extends State<HomePage> {
 
     ///向目标.dart文件插入垃圾代码
     Random random = Random();
+    //方式1：向非注解类、非注解方法、非getter和setter等方法前面添加垃圾代码
     for(File file in dartFileList){
       ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
       ///找到可以添加垃圾代码的那一行代码申明：类声明的前面、方法申明的前面。
+      bool isAlreadyConfused = false;
       List<String> targetClassLines = [];
       List<String> targetMethodLines = [];
       String fileCodeString = await file.readAsString();
@@ -132,6 +135,14 @@ class _HomePageState extends State<HomePage> {
         if (declaration is ClassDeclaration) {
           //发现类
           // print('    发现类: ${declaration.name}');
+          String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+          String? findClassString = junkClassList.where((e){
+            return e.contains(targetClassBody);
+          }).toList().firstOrNull;
+          if(findClassString != null){
+            isAlreadyConfused = true;
+            break;
+          }
           String targetClassLine = fileCodeString.substring(declaration.classKeyword.charOffset, declaration.leftBracket.charEnd);
           targetClassLines.add(targetClassLine);
           // 遍历类成员
@@ -139,6 +150,14 @@ class _HomePageState extends State<HomePage> {
             if (member is MethodDeclaration) {
               //发现方法
               // print('    发现方法: ${member.name}');
+              String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+              String? findMethodString = junkMethodList.where((e){
+                return e.contains(targetMethodBody);
+              }).toList().firstOrNull;
+              if(findMethodString != null){
+                isAlreadyConfused = true;
+                break;
+              }
               int? methodStart, methodEnd;
               if(member.modifierKeyword != null){
                 methodStart = member.modifierKeyword!.offset;
@@ -162,8 +181,9 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      // print(targetClassLines.join('\n'));
-      // print(targetMethodLines.join('\n'));
+      if(isAlreadyConfused){
+        break;
+      }
 
       //已经使用过的index(防止同一文件中植入相同类或方法)
       List<int> randomClassIndexList = [];
@@ -208,6 +228,202 @@ class _HomePageState extends State<HomePage> {
       ///重新写入文件
       file.writeAsStringSync(newCodeLines.join("\n"));
     }
+
+    //方式2：向所有类和方法前面添加垃圾代码
+    for(File file in dartFileList){
+      ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
+      ///找到可以添加垃圾代码的那一行代码申明：类声明的前面、方法申明的前面。
+      bool isAlreadyConfused = false;
+      String fileCodeString = await file.readAsString();
+      List<String> targetClassBodys = [];
+      List<String> targetMethodBodys = [];
+      final parseResult = parseString(content: fileCodeString);
+      final compilationUnit = parseResult.unit;
+      // 遍历所有顶级声明
+      for (final declaration in compilationUnit.declarations) {
+        if (declaration is ClassDeclaration) {
+          //发现类
+          // print('    发现类: ${declaration.name}');
+          String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+          String? findClassString = junkClassList.where((e){
+            return e.contains(targetClassBody);
+          }).toList().firstOrNull;
+          if(findClassString != null){
+            isAlreadyConfused = true;
+            break;
+          }
+          targetClassBodys.add(targetClassBody);
+          // 遍历类成员
+          for (final member in declaration.members) {
+            if (member is MethodDeclaration) {
+              //发现方法
+              // print('    发现方法: ${member.name}');
+              String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+              String? findMethodString = junkMethodList.where((e){
+                return e.contains(targetMethodBody);
+              }).toList().firstOrNull;
+              if(findMethodString != null){
+                isAlreadyConfused = true;
+                break;
+              }
+              targetMethodBodys.add(targetMethodBody);
+            }
+          }
+        } else if (declaration is FunctionDeclaration) {
+          //发现顶级函数
+          // print('发现顶级函数: ${declaration.name}');
+        }
+      }
+
+      if(isAlreadyConfused){
+        break;
+      }
+
+      ///再次遍历代码行，给具体行添加垃圾代码
+      String newFileCodeString = fileCodeString;
+      Random random = Random();
+      //已经使用过的index(防止同一文件中植入相同类或方法)
+      List<int> randomClassIndexList = [];
+      List<int> randomMethodIndexList = [];
+      for (String codeBody in targetClassBodys) {
+        int index = newFileCodeString.indexOf(codeBody);
+        if (index != -1) {
+          if (randomClassIndexList.length < junkClassList.length) {
+            int randomIndex;
+            do {
+              randomIndex = random.nextInt(junkClassList.length);
+            } while (randomClassIndexList.contains(randomIndex));
+            randomClassIndexList.add(randomIndex);
+            newFileCodeString = newFileCodeString.replaceRange(
+                index, index, junkClassList[randomIndex]);
+          }
+        }
+      }
+      for (String codeBody in targetMethodBodys) {
+        int index = newFileCodeString.indexOf(codeBody);
+        if (index != -1) {
+          if (randomMethodIndexList.length < junkMethodList.length) {
+            int randomIndex;
+            do {
+              randomIndex = random.nextInt(junkMethodList.length);
+            } while (randomMethodIndexList.contains(randomIndex));
+            randomMethodIndexList.add(randomIndex);
+            newFileCodeString = newFileCodeString.replaceRange(
+                index, index, junkMethodList[randomIndex]);
+          }
+        }
+      }
+
+      ///重新写入文件
+      file.writeAsStringSync(newFileCodeString);
+    }
+  }
+
+  ///还原代码
+  Future resetCode() async {
+    ///遍历文件夹下的所有.dart文件准备还原
+    String filePath = _filePathTextController.text;
+
+    List<File> dartFileList = [];
+    Directory fileDirectory = Directory(filePath);
+    if(fileDirectory.existsSync()) {
+      Future readFileRecursively(Directory directory) async {
+        if (directory.existsSync()) {
+          await for (var entity in directory.list()) {
+            if (entity is Directory) {
+              await readFileRecursively(entity);
+            } else if (entity is File) {
+              if (entity.path.endsWith('.dart')) {
+                dartFileList.add(entity);
+              }
+            }
+          }
+        }
+      }
+      await readFileRecursively(fileDirectory);
+    }else{
+      File file = File(filePath);
+      if(file.existsSync()) {
+        if (file.path.endsWith('.dart')) {
+          dartFileList.add(file);
+        }
+      }
+    }
+
+    ///获取垃圾代码列表（垃圾类）
+    List<String> junkClassList = [];
+    List<String> junkClassCodeLines = _confuseClassTextController.text.split('\n');
+    String junkClassString = '';
+    for(String line in junkClassCodeLines){
+      if(line == annotateString){
+        junkClassList.add(junkClassString);
+        junkClassString = '';
+      }
+      junkClassString += '$line\n';
+    }
+    junkClassList.removeAt(0);
+
+    ///获取垃圾代码列表（垃圾方法）
+    List<String> junkMethodList = [];
+    junkMethodList.clear();
+    List<String> junkMethodCodeLines = _confuseMethodTextController.text.split('\n');
+    String junkMethodString = '';
+    for(String line in junkMethodCodeLines){
+      if(line == annotateString){
+        junkMethodList.add(junkMethodString);
+        junkMethodString = '';
+      }
+      junkMethodString += '$line\n';
+    }
+    junkMethodList.removeAt(0);
+
+
+    for(File file in dartFileList){
+      ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
+      ///找到已经添加的垃圾代码类、方法。
+      String fileCodeString = await file.readAsString();
+      //发现的混淆代码类列表
+      List<String> junkCodeBodyList = [];
+      final parseResult = parseString(content: fileCodeString);
+      final compilationUnit = parseResult.unit;
+      // 遍历所有顶级声明
+      for (final declaration in compilationUnit.declarations) {
+        if (declaration is ClassDeclaration) {
+          //发现类
+          // print('    发现类: ${declaration.name}');
+          String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+          String? findClassString = junkClassList.where((e){
+            return e.contains(targetClassBody);
+          }).toList().firstOrNull;
+          if(findClassString != null){
+            junkCodeBodyList.add(findClassString);
+          }
+          // 遍历类成员
+          for (final member in declaration.members) {
+            if (member is MethodDeclaration) {
+              //发现方法
+              // print('    发现方法: ${member.name}');
+              String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+              String? findMethodString = junkMethodList.where((e){
+                return e.contains(targetMethodBody);
+              }).toList().firstOrNull;
+              if(findMethodString != null){
+                junkCodeBodyList.add(findMethodString);
+              }
+            }
+          }
+        } else if (declaration is FunctionDeclaration) {
+          //发现顶级函数
+          // print('发现顶级函数: ${declaration.name}');
+        }
+      }
+
+      String newFileCodeString = fileCodeString;
+      for(String junkCode in junkCodeBodyList){
+        newFileCodeString = newFileCodeString.replaceAll(junkCode, '');
+      }
+      file.writeAsStringSync(newFileCodeString);
+    }
   }
 
   @override
@@ -226,16 +442,19 @@ class _HomePageState extends State<HomePage> {
           sizeStyle: CupertinoButtonSize.small,
           padding: EdgeInsets.only(left: 15),
           alignment: Alignment.centerLeft,
-          onPressed: (){
-            _readAndCacheConfuseCode(force: true);
+          onPressed: () async {
+            await resetCode();
+            setState(() {
+              _message = '已还原';
+            });
           },
           child: Text(
             '还原',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w300,
-              color: Colors.black,
+              fontWeight: FontWeight.w600,
+              color: Colors.blue,
             ),
           ),
         ),
@@ -277,17 +496,40 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '"垃圾类"代码列表',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '"垃圾类"代码列表',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                            CupertinoButton(
+                              color: Colors.blue,
+                              sizeStyle: CupertinoButtonSize.small,
+                              padding: EdgeInsets.symmetric(horizontal: 15),
+                              onPressed: (){
+                                _readAndCacheConfuseCode(resetClass: true);
+                              },
+                              child: Text(
+                                '重置',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w300,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        SizedBox(height: 5),
                         Expanded(
                           child: ConfuseTextFiled(
-                            hintText: '请输入垃圾类列表，并使用@pragma(\'vm:entry-point\')注解',
+                            hintText: '请输入垃圾类列表，并使用$annotateString注解',
                             controller: _confuseClassTextController,
                           ),
                         )
@@ -299,17 +541,40 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '"垃圾方法"代码列表',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '"垃圾方法"代码列表',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                            CupertinoButton(
+                              color: Colors.blue,
+                              sizeStyle: CupertinoButtonSize.small,
+                              padding: EdgeInsets.symmetric(horizontal: 15),
+                              onPressed: (){
+                                _readAndCacheConfuseCode(resetMethod: true);
+                              },
+                              child: Text(
+                                '重置',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w300,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          ],
                         ),
+                        SizedBox(height: 5),
                         Expanded(
                           child: ConfuseTextFiled(
-                            hintText: '请输入垃圾方法列表，并使用@pragma(\'vm:entry-point\')注解',
+                            hintText: '请输入垃圾方法列表，并使用$annotateString注解',
                             controller: _confuseMethodTextController,
                           ),
                         )
