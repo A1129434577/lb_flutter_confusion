@@ -19,10 +19,9 @@ class ReadmePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Text(
           '''
-        该app提供Flutter项目混淆，向合适的地方插入垃圾代码，支持自定义垃圾代码库。
+        该app提供Flutter项目混淆，向合适的地方插入垃圾代码（可还原），支持自定义垃圾代码库。
         
-        脚本利用dart代码静态分析工具analyzer获取抽象语法树(AST)，
-        在合适的地方（目前是在所有类前添加垃圾类，以及非顶层方法前添加垃圾方法），
+        目前是在所有类前添加垃圾类，以及非顶层方法前添加垃圾方法，
         可根据需要自行添加垃圾代码，
         自行添加垃圾代码要注意:
         1.需使用@pragma('vm:entry-point')注解，防止打包后被编译器优化。
