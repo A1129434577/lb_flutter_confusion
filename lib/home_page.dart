@@ -23,11 +23,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   static const junkClassCodeCacheKey = 'lb_confuse_class';
   static const junkMethodCodeCacheKey = 'lb_confuse_methods';
+  static const junkFieldsCodeCacheKey = 'lb_confuse_fields';
 
   final TextEditingController _confuseClassTextController = TextEditingController();
   final TextEditingController _confuseMethodTextController = TextEditingController();
+  final TextEditingController _confuseFieldsTextController = TextEditingController();
+
   final TextEditingController _filePathTextController = TextEditingController();
   String? _message;
+
+  //想要添加的属性个数
+  ValueNotifier<int> addFiledCount = ValueNotifier(6);
 
   @override
   void initState() {
@@ -38,26 +44,39 @@ class _HomePageState extends State<HomePage> {
     _confuseMethodTextController.addListener(() {
       DefaultCacheManager().putFile(junkMethodCodeCacheKey, utf8.encode(_confuseMethodTextController.text));
     });
+    _confuseFieldsTextController.addListener(() {
+      DefaultCacheManager().putFile(junkFieldsCodeCacheKey, utf8.encode(_confuseFieldsTextController.text));
+    });
     _readAndCacheConfuseCode();
   }
 
   ///读取垃圾代码
-  Future _readAndCacheConfuseCode({bool resetClass=false, bool resetMethod=false}) async {
+  Future _readAndCacheConfuseCode({bool resetClass=false, bool resetMethods=false, bool resetFields=false}) async {
     File? junkClassFile = (await DefaultCacheManager().getFileFromCache(junkClassCodeCacheKey))?.file;
     File? junkMethodsFile = (await DefaultCacheManager().getFileFromCache(junkMethodCodeCacheKey))?.file;
+    File? junkFieldsFile = (await DefaultCacheManager().getFileFromCache(junkFieldsCodeCacheKey))?.file;
+
     if(junkClassFile == null || resetClass){
-      String junkClassPath = 'assets/lb_confuse_class.dart';
+      String junkClassPath = 'assets/$junkClassCodeCacheKey.dart';
       String junkClassCode = await rootBundle.loadString(junkClassPath);
       junkClassFile = await DefaultCacheManager().putFile(junkClassCodeCacheKey, utf8.encode(junkClassCode));
     }
-    if(junkMethodsFile == null || resetMethod){
-      String junkMethodsPath = 'assets/lb_confuse_methods.dart';
+
+    if(junkMethodsFile == null || resetMethods){
+      String junkMethodsPath = 'assets/$junkMethodCodeCacheKey.dart';
       String junkMethodCode = await rootBundle.loadString(junkMethodsPath);
       junkMethodsFile = await DefaultCacheManager().putFile(junkMethodCodeCacheKey, utf8.encode(junkMethodCode));
     }
 
+    if(junkFieldsFile == null || resetFields){
+      String junkFieldsPath = 'assets/$junkFieldsCodeCacheKey.dart';
+      String junkFieldsCode = await rootBundle.loadString(junkFieldsPath);
+      junkFieldsFile= await DefaultCacheManager().putFile(junkFieldsCodeCacheKey, utf8.encode(junkFieldsCode));
+    }
+
     _confuseClassTextController.text = junkClassFile.readAsStringSync();
     _confuseMethodTextController.text = junkMethodsFile.readAsStringSync();
+    _confuseFieldsTextController.text = junkFieldsFile.readAsStringSync();
   }
 
   ///开始混淆
@@ -91,17 +110,17 @@ class _HomePageState extends State<HomePage> {
     }
 
     ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
-    ///获取垃圾类和方法代码列表
-    List<String> junkClassList = [], junkMethodList = [];
-    String junkClassAndMethodCodeString = _confuseClassTextController.text+_confuseMethodTextController.text;
-    final junkParseResult = parseString(content: junkClassAndMethodCodeString);
+    ///获取垃圾类、方法和属性代码列表
+    List<String> junkClassList = [], junkMethodList = [], junkFieldsList = [];
+    String junkAllCodeString = _confuseClassTextController.text+_confuseMethodTextController.text+_confuseFieldsTextController.text;
+    final junkParseResult = parseString(content: junkAllCodeString);
     final junkCompilationUnit = junkParseResult.unit;
     //遍历所有顶级声明
     for (final declaration in junkCompilationUnit.declarations) {
       if (declaration is ClassDeclaration) {
         //发现类
         // print('发现类: ${declaration.name}');
-        String junkClassBody = junkClassAndMethodCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+        String junkClassBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkClassBody += '\n';
         junkClassList.add(junkClassBody);
         // 遍历类成员
@@ -113,31 +132,45 @@ class _HomePageState extends State<HomePage> {
             // String junkMethodBody = junkClassAndMethodCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
             // junkMethodBody += '\n';
             // junkMethodList.add(junkMethodBody);
+          }else if (member is FieldDeclaration) {
+            //发现字段
+            // print('发现字段: ${member.fields}');
           }
         }
-      } else if (declaration is FunctionDeclaration) {
+      }
+      else if (declaration is FunctionDeclaration) {
         //发现顶级函数
         // print('发现顶级函数: ${declaration.name}');
-        String junkTopMethodBody = junkClassAndMethodCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+        String junkTopMethodBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkTopMethodBody += '\n';
         junkMethodList.add(junkTopMethodBody);
+      }
+      else if(declaration is TopLevelVariableDeclaration) {
+        //发现字段
+        // print('发现字段: ${declaration}');
+        String junkTopFieldBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+        junkTopFieldBody += '\n';
+        junkFieldsList.add(junkTopFieldBody);
       }
     }
 
     ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
-    ///向目标.dart文件所有类和方法前面插入垃圾代码
+    ///向目标.dart文件所有类、方法和属性前面插入垃圾代码
     for(File file in dartFileList){
       String fileCodeString = await file.readAsString();
-      ///找到可以添加垃圾代码的那一行代码申明：类声明的前面、方法申明的前面。
+      ///找到可以添加垃圾代码的那一行代码申明：类声明、方法申明和属性声明的前面。
       ///不能单单只记录行号，因为添加垃圾代码后，行号会变化，
       ///所以要记录代码体，然后再去原始代码中查找代码体的位置。
       bool isAlreadyConfused = false;
       List<String> targetClassBodys = [];
       List<String> targetMethodBodys = [];
+      List<String> targetFieldBodys = [];
       final parseResult = parseString(content: fileCodeString);
       final compilationUnit = parseResult.unit;
       //遍历所有顶级声明
       for (final declaration in compilationUnit.declarations) {
+        List<String> thisClassTargetFieldBodys = [];
+        bool isConstConstructor = false;
         if (declaration is ClassDeclaration) {
           //发现类
           // print('发现类: ${declaration.name}');
@@ -165,8 +198,27 @@ class _HomePageState extends State<HomePage> {
               }
               targetMethodBodys.add(targetMethodBody);
             }
+            else if(member is FieldDeclaration){
+              //发现字段
+              // print('发现字段: ${member.fields}');
+              String targetFieldBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+              String? findFieldString = junkFieldsList.where((e){
+                return e.contains(targetFieldBody);
+              }).toList().firstOrNull;
+              if(findFieldString != null){
+                isAlreadyConfused = true;
+                break;
+              }
+              thisClassTargetFieldBodys.add(targetFieldBody);
+            }
+            else if(member is ConstructorDeclaration){
+              if(member.constKeyword != null){
+                isConstConstructor = true;
+              }
+            }
           }
-        } else if (declaration is FunctionDeclaration) {
+        }
+        else if (declaration is FunctionDeclaration) {
           //发现顶级函数
           // print('发现顶级函数: ${declaration.name}');
           String targetTopMethodBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
@@ -178,6 +230,9 @@ class _HomePageState extends State<HomePage> {
             break;
           }
           targetMethodBodys.add(targetTopMethodBody);
+        }
+        if(isConstConstructor == false){
+          targetFieldBodys.addAll(thisClassTargetFieldBodys);
         }
       }
 
@@ -191,6 +246,7 @@ class _HomePageState extends State<HomePage> {
       //已经使用过的index(防止同一文件中植入相同类或方法)
       List<int> randomClassIndexList = [];
       List<int> randomMethodIndexList = [];
+      List<int> randomFiledIndexList = [];
       for (String codeBody in targetClassBodys) {
         int index = newFileCodeString.indexOf(codeBody);
         if (index != -1) {
@@ -216,6 +272,20 @@ class _HomePageState extends State<HomePage> {
             randomMethodIndexList.add(randomIndex);
             newFileCodeString = newFileCodeString.replaceRange(
                 index, index, junkMethodList[randomIndex]);
+          }
+        }
+      }
+      for (String codeBody in targetFieldBodys) {
+        int index = newFileCodeString.indexOf(codeBody);
+        if (index != -1) {
+          if (randomFiledIndexList.length < junkFieldsList.length && randomFiledIndexList.length<addFiledCount.value) {
+            int randomIndex;
+            do {
+              randomIndex = random.nextInt(junkFieldsList.length);
+            } while (randomFiledIndexList.contains(randomIndex));
+            randomFiledIndexList.add(randomIndex);
+            newFileCodeString = newFileCodeString.replaceRange(
+                index, index, junkFieldsList[randomIndex]);
           }
         }
       }
@@ -256,17 +326,17 @@ class _HomePageState extends State<HomePage> {
     }
 
     ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
-    ///获取垃圾类和方法代码列表
-    List<String> junkClassList = [], junkMethodList = [];
-    String junkClassAndMethodCodeString = _confuseClassTextController.text+_confuseMethodTextController.text;
-    final junkParseResult = parseString(content: junkClassAndMethodCodeString);
+    ///获取垃圾类、方法和属性代码列表
+    List<String> junkClassList = [], junkMethodList = [], junkFieldsList = [];
+    String junkAllCodeString = _confuseClassTextController.text+_confuseMethodTextController.text+_confuseFieldsTextController.text;
+    final junkParseResult = parseString(content: junkAllCodeString);
     final junkCompilationUnit = junkParseResult.unit;
     //遍历所有顶级声明
     for (final declaration in junkCompilationUnit.declarations) {
       if (declaration is ClassDeclaration) {
         //发现类
         // print('发现类: ${declaration.name}');
-        String junkClassBody = junkClassAndMethodCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+        String junkClassBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkClassBody += '\n';
         junkClassList.add(junkClassBody);
         // 遍历类成员
@@ -278,19 +348,30 @@ class _HomePageState extends State<HomePage> {
             // String junkMethodBody = junkClassAndMethodCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
             // junkMethodBody += '\n';
             // junkMethodList.add(junkMethodBody);
+          }else if (member is FieldDeclaration) {
+            //发现字段
+            // print('发现字段: ${member.fields}');
           }
         }
-      } else if (declaration is FunctionDeclaration) {
+      }
+      else if (declaration is FunctionDeclaration) {
         //发现顶级函数
         // print('发现顶级函数: ${declaration.name}');
-        String junkTopMethodBody = junkClassAndMethodCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+        String junkTopMethodBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkTopMethodBody += '\n';
         junkMethodList.add(junkTopMethodBody);
+      }
+      else if(declaration is TopLevelVariableDeclaration) {
+        //发现字段
+        // print('发现字段: ${declaration}');
+        String junkTopFieldBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+        junkTopFieldBody += '\n';
+        junkFieldsList.add(junkTopFieldBody);
       }
     }
 
     ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
-    ///找到已经添加的垃圾代码类、方法。
+    ///找到已经添加的垃圾代码类、方法和属性。
     for(File file in dartFileList){
       String fileCodeString = await file.readAsString();
       //发现的混淆代码类列表
@@ -322,6 +403,17 @@ class _HomePageState extends State<HomePage> {
                 junkCodeBodyList.add(findMethodString);
               }
             }
+            else if(member is FieldDeclaration){
+              //发现字段
+              // print('发现字段: ${member.fields}');
+              String targetFieldBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+              String? findFieldString = junkFieldsList.where((e){
+                return e.contains(targetFieldBody);
+              }).toList().firstOrNull;
+              if(findFieldString != null){
+                junkCodeBodyList.add(findFieldString);
+              }
+            }
           }
         } else if (declaration is FunctionDeclaration) {
           //发现顶级函数
@@ -346,6 +438,32 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    List<String> titles = ['"垃圾类"代码列表', '"垃圾方法"代码列表', '"垃圾属性"代码列表'];
+    final List<String> placeholderList = [
+      '''
+生成n个dart类，要求如下：
+1.不需要引入任何库；
+2.互不关联；
+3.中等复杂；
+4.每个类独立，不引用私有类；
+5.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
+    ''',
+      '''
+生成n个dart方法，要求如下：
+1.不需要引入任何库；
+2.互不关联；
+3.中等复杂；
+4.每个方法独立，不需要调用私有方法；
+5.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
+    ''',
+      '''
+生成n个dart的final属性，要求如下：
+1.无需分组；
+2.属性名乱码处理；
+2.不需要引入任何库；
+3.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
+    '''
+    ];
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -409,8 +527,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             Expanded(
               child: Row(
-                children: [
-                  Expanded(
+                spacing: 10,
+                children: titles.map((title){
+                  int index = titles.indexOf(title);
+                  return Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -418,7 +538,7 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '"垃圾类"代码列表',
+                              title,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -430,7 +550,13 @@ class _HomePageState extends State<HomePage> {
                               sizeStyle: CupertinoButtonSize.small,
                               padding: EdgeInsets.symmetric(horizontal: 15),
                               onPressed: (){
-                                _readAndCacheConfuseCode(resetClass: true);
+                                if(index==0){
+                                  _readAndCacheConfuseCode(resetClass: true);
+                                }else if(index == 1){
+                                  _readAndCacheConfuseCode(resetMethods: true);
+                                }else if(index == 2){
+                                  _readAndCacheConfuseCode(resetFields: true);
+                                }
                               },
                               child: Text(
                                 '重置',
@@ -447,59 +573,84 @@ class _HomePageState extends State<HomePage> {
                         SizedBox(height: 5),
                         Expanded(
                           child: ConfuseTextFiled(
-                            hintText: '请输入垃圾类列表，并使用$annotateString注解',
-                            controller: _confuseClassTextController,
+                            hintText: placeholderList[index],
+                            controller: [
+                              _confuseClassTextController,
+                              _confuseMethodTextController,
+                              _confuseFieldsTextController
+                            ][index],
                           ),
-                        )
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ),
+                        if(index == 2)Row(
                           children: [
                             Text(
-                              '"垃圾方法"代码列表',
+                              '添加属性个数',
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
                                 color: Colors.black,
                               ),
                             ),
                             CupertinoButton(
-                              color: Colors.blue,
-                              sizeStyle: CupertinoButtonSize.small,
-                              padding: EdgeInsets.symmetric(horizontal: 15),
                               onPressed: (){
-                                _readAndCacheConfuseCode(resetMethod: true);
+                                addFiledCount.value = max(addFiledCount.value-1, 0);
                               },
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.zero,
+                              sizeStyle: CupertinoButtonSize.small,
                               child: Text(
-                                '重置',
-                                overflow: TextOverflow.ellipsis,
+                                '-',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w300,
-                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
                                 ),
                               ),
-                            )
+                            ),
+                            Container(
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha((255*0.5).round()),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ValueListenableBuilder(
+                                valueListenable: addFiledCount,
+                                builder: (BuildContext context, int value, Widget? child) {
+                                  return Text(
+                                    '$value',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            CupertinoButton(
+                              onPressed: (){
+                                addFiledCount.value ++;
+                              },
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.zero,
+                              sizeStyle: CupertinoButtonSize.small,
+                              child: Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                        SizedBox(height: 5),
-                        Expanded(
-                          child: ConfuseTextFiled(
-                            hintText: '请输入垃圾方法列表，并使用$annotateString注解',
-                            controller: _confuseMethodTextController,
-                          ),
-                        )
                       ],
                     ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
             SizedBox(height: 15),

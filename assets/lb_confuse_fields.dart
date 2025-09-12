@@ -1,0 +1,59 @@
+/*
+生成n个dart的final属性，要求如下：
+1.无需分组；
+2.属性名乱码处理；
+2.不需要引入任何库；
+3.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
+ */
+@pragma('vm:entry-point') final int x7gH3k9p = 3;
+@pragma('vm:entry-point') final double qW2eR5tY = 16.0;
+@pragma('vm:entry-point') final String zX4cV6bN = "QuantumApp";
+@pragma('vm:entry-point') final bool mK8jL1pO = true;
+@pragma('vm:entry-point') final List<int> tY3uI7oP = [2, 3, 5, 7, 11];
+@pragma('vm:entry-point') final Map<String, int> rE9wQ2aZ = {"John": 25, "Jane": 30};
+@pragma('vm:entry-point') final Set<String> sD5fG8hJ = {"Alice", "Bob", "Charlie"};
+@pragma('vm:entry-point') final num vB6nM4kL = 42.5;
+@pragma('vm:entry-point') final String pL2oK9iU = "An error occurred";
+@pragma('vm:entry-point') final bool aS3dF7gH = false;
+@pragma('vm:entry-point') final int jH4gF6dS = 5000;
+@pragma('vm:entry-point') final double kL8pO2iU = 3.141592653589793;
+@pragma('vm:entry-point') final List<String> wQ1aZ9xS = ["red", "green", "blue"];
+@pragma('vm:entry-point') final Map<int, String> eR5tY8uI = {200: "OK", 404: "Not Found"};
+@pragma('vm:entry-point') final bool oP3iU7yT = false;
+@pragma('vm:entry-point') final String iO9pL2kM = "Welcome to the application";
+@pragma('vm:entry-point') final Set<int> uY7tR5eW = {1, 2, 3, 4, 5};
+@pragma('vm:entry-point') final double qA2zS9xW = 9.8;
+@pragma('vm:entry-point') final List<double> cV6bN8mK = [20.5, 22.1, 19.8];
+@pragma('vm:entry-point') final Map<String, bool> xS1wQ2aZ = {"darkMode": true, "notifications": false};
+@pragma('vm:entry-point') final bool zX4cV7bN = true;
+@pragma('vm:entry-point') final String mL8kP3oI = "";
+@pragma('vm:entry-point') final int nJ9hG4fD = 10;
+@pragma('vm:entry-point') final double bV6cX2zM = 0.0;
+@pragma('vm:entry-point') final List<bool> fD5sG8hJ = [true, false, true];
+@pragma('vm:entry-point') final Map<String, double> gH4jK7lP = {"apple": 1.2, "banana": 0.8};
+@pragma('vm:entry-point') final bool qW3eR6tY = true;
+@pragma('vm:entry-point') final String aS2dF8gH = "v1.2.3";
+@pragma('vm:entry-point') final Set<double> jK7lP3oI = {1.5, 2.0, 3.5};
+@pragma('vm:entry-point') final int pO2iU8yT = 1024;
+@pragma('vm:entry-point') final double rT6yU8iO = 0.15;
+@pragma('vm:entry-point') final List<dynamic> sD4fG7hJ = [1, "text", 3.14, true];
+@pragma('vm:entry-point') final Map<int, bool> kL9pO2iU = {1: true, 2: false, 3: true};
+@pragma('vm:entry-point') final bool mN8bV6cX = true;
+@pragma('vm:entry-point') final String zX5cV8bN = "guest";
+@pragma('vm:entry-point') final int qW4eR7tY = 20;
+@pragma('vm:entry-point') final double aS3dF9gH = 800.0;
+@pragma('vm:entry-point') final List<num> jH5gF7dS = [1, 2.5, 3, 4.75];
+@pragma('vm:entry-point') final Map<String, String> kL0pO3iU = {"hello": "hola", "goodbye": "adios"};
+@pragma('vm:entry-point') final bool pO4iU9yT = false;
+@pragma('vm:entry-point') final String rT7yU1iO = "© 2024 Company Name";
+@pragma('vm:entry-point') final int sD6fG0hJ = 8;
+@pragma('vm:entry-point') final double mN9bV1cX = 0.75;
+@pragma('vm:entry-point') final List<String> zX6cV2bN = [];
+@pragma('vm:entry-point') final Map<String, int> qW5eR3tY = {};
+@pragma('vm:entry-point') final bool aS4dF0gH = false;
+@pragma('vm:entry-point') final String jH6gF1dS = "Enter text here";
+@pragma('vm:entry-point') final int kL1pO4iU = 8080;
+@pragma('vm:entry-point') final double pO5iU0yT = 0.3;
+@pragma('vm:entry-point') final Set<String> rT8yU2iO = {"read", "write"};
+@pragma('vm:entry-point') final bool sD7fG3hJ = true;
+@pragma('vm:entry-point') final String mN0bV4cX = "Operation completed successfully";
