@@ -38,8 +38,9 @@ class ReadmePage extends StatelessWidget {
         5.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
         
         自行添加垃圾属性代码（属性越多代码随机性越大）:
-        1.不需要引入任何库；
-        2.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
+        1.final的基本数据类型（防止其他类型加入const类型对象报错）；
+        2.不需要引入任何库；
+        3.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
         
         使用方法：
         1.选择需要混淆的文件夹或单个.dart文件

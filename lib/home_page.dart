@@ -11,8 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:lb_flutter_confusion/readme_page.dart';
 
-const String annotateString = '@pragma(\'vm:entry-point\')';
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -164,13 +162,16 @@ class _HomePageState extends State<HomePage> {
       bool isAlreadyConfused = false;
       List<String> targetClassBodys = [];
       List<String> targetMethodBodys = [];
-      List<String> targetFieldBodys = [];
+      //value:是否是const类的属性
+      Map<List<String>, bool> targetFieldBodysInfo = {};
       final parseResult = parseString(content: fileCodeString);
       final compilationUnit = parseResult.unit;
       //遍历所有顶级声明
       for (final declaration in compilationUnit.declarations) {
-        List<String> thisClassTargetFieldBodys = [];
-        bool isConstConstructor = false;
+        List<String> thisClassTargetFieldBodys = [], thisClassTargetMethodBodys = [];
+        //如果是const类构造函数，则不添加属性
+        //如果是虚拟类，不添加垃圾方法属性
+        bool isCannotJunkFields = false, isCannotJunkMethods = false, isConstClass = false;
         if (declaration is ClassDeclaration) {
           //发现类
           // print('发现类: ${declaration.name}');
@@ -183,6 +184,10 @@ class _HomePageState extends State<HomePage> {
             break;
           }
           targetClassBodys.add(targetClassBody);
+          if(declaration.abstractKeyword!=null){
+            isCannotJunkFields = true;
+            isCannotJunkMethods = true;
+          }
           // 遍历类成员
           for (final member in declaration.members) {
             if (member is MethodDeclaration) {
@@ -196,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                 isAlreadyConfused = true;
                 break;
               }
-              targetMethodBodys.add(targetMethodBody);
+              thisClassTargetMethodBodys.add(targetMethodBody);
             }
             else if(member is FieldDeclaration){
               //发现字段
@@ -213,7 +218,7 @@ class _HomePageState extends State<HomePage> {
             }
             else if(member is ConstructorDeclaration){
               if(member.constKeyword != null){
-                isConstConstructor = true;
+                isConstClass = true;
               }
             }
           }
@@ -229,10 +234,13 @@ class _HomePageState extends State<HomePage> {
             isAlreadyConfused = true;
             break;
           }
-          targetMethodBodys.add(targetTopMethodBody);
+          thisClassTargetMethodBodys.add(targetTopMethodBody);
         }
-        if(isConstConstructor == false){
-          targetFieldBodys.addAll(thisClassTargetFieldBodys);
+        if(isCannotJunkMethods == false){
+          targetMethodBodys.addAll(thisClassTargetMethodBodys);
+        }
+        if(isCannotJunkFields == false){
+          targetFieldBodysInfo[thisClassTargetFieldBodys] = isConstClass;
         }
       }
 
@@ -275,20 +283,22 @@ class _HomePageState extends State<HomePage> {
           }
         }
       }
-      for (String codeBody in targetFieldBodys) {
-        int index = newFileCodeString.indexOf(codeBody);
-        if (index != -1) {
-          if (randomFiledIndexList.length < junkFieldsList.length && randomFiledIndexList.length<addFiledCount.value) {
-            int randomIndex;
-            do {
-              randomIndex = random.nextInt(junkFieldsList.length);
-            } while (randomFiledIndexList.contains(randomIndex));
-            randomFiledIndexList.add(randomIndex);
-            newFileCodeString = newFileCodeString.replaceRange(
-                index, index, junkFieldsList[randomIndex]);
+      targetFieldBodysInfo.forEach((targetFieldBodys, isConstClass){
+        for (String codeBody in targetFieldBodys) {
+          int index = newFileCodeString.indexOf(codeBody);
+          if (index != -1) {
+            if (randomFiledIndexList.length < junkFieldsList.length && randomFiledIndexList.length<addFiledCount.value) {
+              int randomIndex;
+              do {
+                randomIndex = random.nextInt(junkFieldsList.length);
+              } while (randomFiledIndexList.contains(randomIndex));
+              randomFiledIndexList.add(randomIndex);
+              newFileCodeString = newFileCodeString.replaceRange(
+                  index, index, junkFieldsList[randomIndex]);
+            }
           }
         }
-      }
+      });
 
       ///重新写入文件
       file.writeAsStringSync(newFileCodeString);
