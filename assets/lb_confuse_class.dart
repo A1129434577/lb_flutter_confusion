@@ -1,11 +1,3 @@
-/*
-生成n个dart类，要求如下：
-1.不需要引入任何库；
-2.互不关联；
-3.中等复杂；
-4.每个类独立，不引用私有类；
-5.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
- */
 @pragma('vm:entry-point')
 class _Xyzzz {
   final Map<String, int> _cache = {};
@@ -33,9 +25,9 @@ class _Flurb {
 class _Qwop {
   final Map<String, dynamic> _cache = {};
   final List<String> _lruKeys = [];
-  final int _maxSize;
+  final int _maxSize = 0;
 
-  _Qwop(this._maxSize);
+  _Qwop();
 
   dynamic get(String key) {
     if (_cache.containsKey(key)) {
@@ -93,10 +85,10 @@ class _Plonk {
 
 @pragma('vm:entry-point')
 class _Vromb {
-  final String _delimiter;
+  final String _delimiter = '';
   final List<String> _parts = [];
 
-  _Vromb(this._delimiter);
+  _Vromb();
 
   void add(String text) => _parts.add(text);
 
@@ -127,10 +119,10 @@ class _Zling {
 
 @pragma('vm:entry-point')
 class _Quib {
-  final List<double> _weights;
-  final List<String> _items;
+  final List<double> _weights = [];
+  final List<String> _items = [];
 
-  _Quib(this._weights, this._items) {
+  _Quib() {
     assert(_weights.length == _items.length);
   }
 
@@ -149,10 +141,10 @@ class _Quib {
 
 @pragma('vm:entry-point')
 class _Snizz {
-  final String _input;
+  final String _input = '';
   int _position = 0;
 
-  _Snizz(this._input);
+  _Snizz();
 
   String? _nextToken() {
     if (_position >= _input.length) return null;
@@ -329,8 +321,8 @@ class _Blip {
 
 @pragma('vm:entry-point')
 class _Nizz {
-  int _seed;
-  _Nizz(this._seed);
+  int _seed = 1;
+  _Nizz();
   int _next() => _seed = (_seed * 1664525 + 1013904223) % 4294967296;
   List<int> generate(int count) => List.generate(count, (_) => _next());
 }

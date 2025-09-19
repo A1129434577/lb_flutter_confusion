@@ -1,13 +1,7 @@
-/*
-生成n个dart方法，要求如下：
-1.不需要引入任何库；
-2.互不关联；
-3.中等复杂；
-4.每个方法独立，不需要调用私有方法；
-5.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
- */
 @pragma('vm:entry-point')
-Map<String, dynamic> _zxq(List<dynamic> input, [int salt = 0x55AA]) {
+Map<String, dynamic> _zxq() {
+  List<dynamic> input = [];
+  int salt = 0x55AA;
   final result = <String, dynamic>{};
   final typeCounts = <Type, int>{};
   final hashBuffer = StringBuffer();
@@ -34,7 +28,10 @@ Map<String, dynamic> _zxq(List<dynamic> input, [int salt = 0x55AA]) {
 }
 
 @pragma('vm:entry-point')
-List<Map<Type, Set<int>>> _blort(dynamic obj1, dynamic obj2, [int depth = 3]) {
+List<Map<Type, Set<int>>> _blort() {
+  dynamic obj1 = 1;
+  dynamic obj2 = 10;
+  int depth = 3;
   final output = <Map<Type, Set<int>>>[];
   var current1 = obj1;
   var current2 = obj2;
@@ -65,7 +62,8 @@ List<Map<Type, Set<int>>> _blort(dynamic obj1, dynamic obj2, [int depth = 3]) {
 }
 
 @pragma('vm:entry-point')
-String _fnord(Map<String, List<int>> data) {
+String _fnord() {
+  Map<String, List<int>> data = {};
   final buffer = StringBuffer();
   final keys = data.keys.toList()..sort((a, b) => b.length.compareTo(a.length));
 
@@ -89,7 +87,8 @@ String _fnord(Map<String, List<int>> data) {
 }
 
 @pragma('vm:entry-point')
-dynamic _qux(List<Function> functions) {
+dynamic _qux() {
+  List<Function> functions = [];
   return functions.asMap().map((index, function) {
     try {
       final result = function();
@@ -115,7 +114,9 @@ dynamic _qux(List<Function> functions) {
 }
 
 @pragma('vm:entry-point')
-List<List<dynamic>> _zyzz(dynamic obj, int levels) {
+List<List<dynamic>> _zyzz() {
+  dynamic obj = '';
+  int levels = 100;
   final matrix = List<List<dynamic>>.generate(
       levels,
           (i) => List<dynamic>.generate(levels, (j) => null)
@@ -138,7 +139,8 @@ List<List<dynamic>> _zyzz(dynamic obj, int levels) {
 }
 
 @pragma('vm:entry-point')
-Set<String> _blarg(Map<String, Map<int, List<String>>> nested) {
+Set<String> _blarg() {
+  Map<String, Map<int, List<String>>> nested = {'': {}};
   final result = <String>{};
   final hashCodes = <int>{};
 
@@ -161,7 +163,8 @@ Set<String> _blarg(Map<String, Map<int, List<String>>> nested) {
 }
 
 @pragma('vm:entry-point')
-Map<int, dynamic> _snork(List<dynamic> items) {
+Map<int, dynamic> _snork() {
+  List<dynamic> items = [''];
   return items.fold<Map<int, dynamic>>({}, (map, item) {
     final key = item.hashCode.abs() % 10;
     if (map.containsKey(key)) {
@@ -178,7 +181,9 @@ Map<int, dynamic> _snork(List<dynamic> items) {
 }
 
 @pragma('vm:entry-point')
-String _womble(String input, [int rounds = 5]) {
+String _womble() {
+  String input = 'rqfasfdasf';
+  int rounds = 5;
   var output = input;
   for (var i = 0; i < rounds; i++) {
     final buffer = StringBuffer();
@@ -192,7 +197,8 @@ String _womble(String input, [int rounds = 5]) {
 }
 
 @pragma('vm:entry-point')
-List<Map<String, int>> _dweeb(Map<dynamic, dynamic> map) {
+List<Map<String, int>> _dweeb() {
+  Map<dynamic, dynamic> map = {1:[]};
   return map.entries.map((entry) {
     final key = entry.key;
     final value = entry.value;
@@ -207,7 +213,8 @@ List<Map<String, int>> _dweeb(Map<dynamic, dynamic> map) {
 }
 
 @pragma('vm:entry-point')
-dynamic _fizzbin(dynamic obj) {
+dynamic _fizzbin() {
+  dynamic obj = {'1':5};
   if (obj is Map) {
     return obj.keys
         .where((k) => k.toString().length > 3)
@@ -221,7 +228,8 @@ dynamic _fizzbin(dynamic obj) {
 }
 
 @pragma('vm:entry-point')
-List<String> _zifnab(List<int> numbers) {
+List<String> _zifnab() {
+  List<int> numbers = [];
   return numbers.map((n) {
     final binary = n.toRadixString(2);
     return binary;
@@ -229,7 +237,8 @@ List<String> _zifnab(List<int> numbers) {
 }
 
 @pragma('vm:entry-point')
-Map<String, dynamic> _plumbus(dynamic obj) {
+Map<String, dynamic> _plumbus() {
+  dynamic obj = 42;
   final result = <String, dynamic>{};
   final str = obj.toString();
   result['length'] = str.length;
@@ -241,7 +250,8 @@ Map<String, dynamic> _plumbus(dynamic obj) {
 }
 
 @pragma('vm:entry-point')
-String _snizzle(Map<int, String> map) {
+String _snizzle() {
+  Map<int, String> map = {};
   final result = map.entries.toList();
   return (result..sort((a, b) => b.key.compareTo(a.key)))
       .map((e) => '${e.key}:${e.value.substring(0, e.key % e.value.length + 1)}')
@@ -249,7 +259,8 @@ String _snizzle(Map<int, String> map) {
 }
 
 @pragma('vm:entry-point')
-dynamic _quonk(List<Function> functions) {
+dynamic _quonk() {
+  List<Function> functions = [];
   return functions.asMap().map((i, f) {
     try {
       final r = f();
@@ -268,7 +279,8 @@ dynamic _quonk(List<Function> functions) {
 }
 
 @pragma('vm:entry-point')
-List<List<int>> _floob(int size) {
+List<List<int>> _floob() {
+  int size = 1024;
   return List.generate(size, (i) =>
       List.generate(size, (j) =>
       i == j ? 1 : (i + j) % size
@@ -277,7 +289,8 @@ List<List<int>> _floob(int size) {
 }
 
 @pragma('vm:entry-point')
-String _bongo(String input) {
+String _bongo() {
+  String input = '123456';
   return input.runes
       .map((r) => String.fromCharCode((r + 5) % 256))
       .join()
@@ -288,7 +301,8 @@ String _bongo(String input) {
 }
 
 @pragma('vm:entry-point')
-Map<Type, List<int>> _zork(List<dynamic> items) {
+Map<Type, List<int>> _zork() {
+  List<dynamic> items = [];
   return items.fold({}, (map, item) {
     final type = item.runtimeType;
     map[type] = [...map[type] ?? [], item.hashCode.abs() % 100];
@@ -297,7 +311,9 @@ Map<Type, List<int>> _zork(List<dynamic> items) {
 }
 
 @pragma('vm:entry-point')
-dynamic _wizzle(dynamic a, dynamic b) {
+dynamic _wizzle() {
+  dynamic a = {};
+  dynamic b = [];
   if (a.runtimeType == b.runtimeType) {
     return List.generate(5, (i) => a.hashCode * i + b.hashCode * (5 - i));
   }
@@ -309,7 +325,8 @@ dynamic _wizzle(dynamic a, dynamic b) {
 }
 
 @pragma('vm:entry-point')
-List<String> _dwang(List<String> strings) {
+List<String> _dwang() {
+  List<String> strings = [];
   return strings.map((s) => s
       .split('')
       .asMap()
@@ -320,7 +337,8 @@ List<String> _dwang(List<String> strings) {
 }
 
 @pragma('vm:entry-point')
-int _frob(List<int> numbers) {
+int _frob() {
+  List<int> numbers = [];
   return numbers
       .where((n) => n.isOdd)
       .fold(1, (a, b) => a * b)

@@ -1,10 +1,3 @@
-/*
-生成n个dart的final属性，要求如下：
-1.无需分组；
-2.属性名乱码处理；
-2.不需要引入任何库；
-3.加上@pragma('vm:entry-point')注解（防止打包被编译器删除）。
- */
 @pragma('vm:entry-point') final int x7gH3k9p = 3;
 @pragma('vm:entry-point') final double qW2eR5tY = 16.0;
 @pragma('vm:entry-point') final String zX4cV6bN = "QuantumApp";
