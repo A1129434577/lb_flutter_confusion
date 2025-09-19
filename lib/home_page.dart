@@ -138,7 +138,7 @@ class _HomePageState extends State<HomePage> {
       }
       else if (declaration is FunctionDeclaration) {
         //发现顶级函数
-        // print('发现顶级函数: ${declaration.name}');
+        // print('发现顶级函数: ${declaration.functionExpression.parameters}');
         String junkTopMethodBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkTopMethodBody += '\n';
         junkMethodList.add(junkTopMethodBody);
@@ -151,6 +151,8 @@ class _HomePageState extends State<HomePage> {
         junkFieldsList.add(junkTopFieldBody);
       }
     }
+
+    Random random = Random();
 
     ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
     ///向目标.dart文件所有类、方法和属性前面插入垃圾代码
@@ -169,17 +171,13 @@ class _HomePageState extends State<HomePage> {
       //遍历所有顶级声明
       for (final declaration in compilationUnit.declarations) {
         List<String> thisClassTargetFieldBodys = [], thisClassTargetMethodBodys = [];
-        //如果是const类构造函数，则不添加属性
-        //如果是虚拟类，不添加垃圾方法属性
+        //如果是虚拟类，不添加垃圾方法和属性
         bool isCannotJunkFields = false, isCannotJunkMethods = false, isConstClass = false;
         if (declaration is ClassDeclaration) {
           //发现类
           // print('发现类: ${declaration.name}');
           String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
-          String? findClassString = junkClassList.where((e){
-            return e.contains(targetClassBody);
-          }).toList().firstOrNull;
-          if(findClassString != null){
+          if(junkClassList.contains('$targetClassBody\n')){
             isAlreadyConfused = true;
             break;
           }
@@ -194,10 +192,7 @@ class _HomePageState extends State<HomePage> {
               //发现方法
               // print('发现方法: ${member.name}');
               String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
-              String? findMethodString = junkMethodList.where((e){
-                return e.contains(targetMethodBody);
-              }).toList().firstOrNull;
-              if(findMethodString != null){
+              if(junkMethodList.contains('$targetMethodBody\n')){
                 isAlreadyConfused = true;
                 break;
               }
@@ -207,10 +202,7 @@ class _HomePageState extends State<HomePage> {
               //发现字段
               // print('发现字段: ${member.fields}');
               String targetFieldBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
-              String? findFieldString = junkFieldsList.where((e){
-                return e.contains(targetFieldBody);
-              }).toList().firstOrNull;
-              if(findFieldString != null){
+              if(junkFieldsList.contains('$targetFieldBody\n')){
                 isAlreadyConfused = true;
                 break;
               }
@@ -227,10 +219,7 @@ class _HomePageState extends State<HomePage> {
           //发现顶级函数
           // print('发现顶级函数: ${declaration.name}');
           String targetTopMethodBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
-          String? findMethodString = junkMethodList.where((e){
-            return e.contains(targetTopMethodBody);
-          }).toList().firstOrNull;
-          if(findMethodString != null){
+          if(junkMethodList.contains('$targetTopMethodBody\n')){
             isAlreadyConfused = true;
             break;
           }
@@ -250,7 +239,6 @@ class _HomePageState extends State<HomePage> {
 
       ///再次遍历代码行，给具体行添加垃圾代码
       String newFileCodeString = fileCodeString;
-      Random random = Random();
       //已经使用过的index(防止同一文件中植入相同类或方法)
       List<int> randomClassIndexList = [];
       List<int> randomMethodIndexList = [];
@@ -303,6 +291,101 @@ class _HomePageState extends State<HomePage> {
       ///重新写入文件
       file.writeAsStringSync(newFileCodeString);
     }
+
+    ///再一次：利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
+    ///遍历已经加入垃圾代码类和方法的文件，找到非垃圾方法体，并非垃圾方法内部调用垃圾代码类初始化和调用垃圾方法。
+    for(File file in dartFileList){
+      String fileCodeString = await file.readAsString();
+
+      final parseResult = parseString(content: fileCodeString);
+      final compilationUnit = parseResult.unit;
+      Map<List,List<List>> classInvokeMethodMap = {};
+      List<String> thisFileInvokeClassList = [];
+      //遍历所有顶级声明
+      for (final declaration in compilationUnit.declarations) {
+        List<String> thisClassInvokeMethodList = [], thisClassTargetMethodBodys = [];
+
+        if (declaration is ClassDeclaration) {
+          //发现类
+          // print('发现类: ${declaration.name}');
+          String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+          targetClassBody += '\n';
+          if(junkClassList.contains(targetClassBody)){
+            //如果是垃圾类，继续下一个类
+            String invokeClassString = '${declaration.name}()';
+            thisFileInvokeClassList.add(invokeClassString);
+            continue;
+          }
+          // 遍历类成员
+          for (final member in declaration.members) {
+            if (member is MethodDeclaration) {
+              //发现方法
+              // print('发现方法: ${member.name}');
+              String methodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
+              methodBody += '\n';
+              if(junkMethodList.contains(methodBody)){
+                //如果是垃圾代码，加入调用列表
+                String invokeMethodString = '${member.name}()';
+                thisClassInvokeMethodList.add(invokeMethodString);
+              }else{
+                String methodBody = fileCodeString.substring(member.body.beginToken.charOffset, member.body.endToken.charEnd);
+                thisClassTargetMethodBodys.add(methodBody);
+              }
+            }
+          }
+        }
+        else if (declaration is FunctionDeclaration) {
+          //发现顶级函数
+          // print('发现顶级函数: ${declaration.name}');
+          String topMethodBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
+          topMethodBody += '\n';
+          if(junkMethodList.contains(topMethodBody)){
+            //如果是垃圾代码，加入调用列表
+            String invokeMethodString = '${declaration.name}()';
+            thisClassInvokeMethodList.add(invokeMethodString);
+          }
+        }
+        classInvokeMethodMap[thisClassTargetMethodBodys] = [thisFileInvokeClassList, thisClassInvokeMethodList];
+      }
+      Map<String, String> targetInvokeMethodRelationshipInfo = {};
+
+      classInvokeMethodMap.forEach((targetMethodList, invokeClassAndMethodList){
+        List invokeClassList = invokeClassAndMethodList.first;
+        List invokeMethodList = invokeClassAndMethodList.last;
+
+        //已经使用过的index(防止同一文件中植入相同类或方法)
+        List<int> randomInvokeClassIndexList = [];
+        List<int> randomInvokeMethodIndexList = [];
+        for(String targetMethod in targetMethodList){
+          List lines = targetMethod.split(';');
+          int targetIndex = random.nextInt(lines.length);
+          int invokeClassIndex;
+          do {
+            invokeClassIndex = random.nextInt(invokeClassList.length);
+          } while (randomInvokeClassIndexList.contains(invokeClassIndex));
+          lines.insert(targetIndex, '\n${invokeClassList[invokeClassIndex]}');
+
+          int targetIndex1 = random.nextInt(lines.length);
+          int invokeMethodIndex;
+          do {
+            invokeMethodIndex = random.nextInt(invokeMethodList.length);
+          } while (randomInvokeMethodIndexList.contains(invokeMethodIndex));
+          lines.insert(targetIndex1, '\n${invokeMethodList[invokeMethodIndex]}');
+
+          String newMethodBody = lines.join(';');
+          targetInvokeMethodRelationshipInfo[targetMethod] = newMethodBody;
+        }
+      });
+      String newFileCodeString = fileCodeString;
+
+      //替换原有方法体
+      targetInvokeMethodRelationshipInfo.forEach((targetMethodBody, newMethodBody){
+        newFileCodeString = newFileCodeString.replaceAll(targetMethodBody, newMethodBody);
+      });
+
+      ///重新写入文件
+      file.writeAsStringSync(newFileCodeString);
+    }
   }
 
   ///还原代码
@@ -336,8 +419,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     ///利用dart代码静态分析工具analyzer获取抽象语法树(AST)：
-    ///获取垃圾类、方法和属性代码列表
-    List<String> junkClassList = [], junkMethodList = [], junkFieldsList = [];
+    ///获取垃圾类、方法、属性以及调用代码列表
+    List<String> junkClassList = [], junkMethodList = [], junkFieldsList = [], invokeCodeList = [];
     String junkAllCodeString = _confuseClassTextController.text+_confuseMethodTextController.text+_confuseFieldsTextController.text;
     final junkParseResult = parseString(content: junkAllCodeString);
     final junkCompilationUnit = junkParseResult.unit;
@@ -349,6 +432,7 @@ class _HomePageState extends State<HomePage> {
         String junkClassBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkClassBody += '\n';
         junkClassList.add(junkClassBody);
+        invokeCodeList.add('${declaration.name}();\n');
         // 遍历类成员
         for (final member in declaration.members) {
           if (member is MethodDeclaration) {
@@ -370,6 +454,7 @@ class _HomePageState extends State<HomePage> {
         String junkTopMethodBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkTopMethodBody += '\n';
         junkMethodList.add(junkTopMethodBody);
+        invokeCodeList.add('${declaration.name}();\n');
       }
       else if(declaration is TopLevelVariableDeclaration) {
         //发现字段
@@ -394,10 +479,8 @@ class _HomePageState extends State<HomePage> {
           //发现类
           // print('发现类: ${declaration.name}');
           String targetClassBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
-          String? findClassString = junkClassList.where((e){
-            return e.contains(targetClassBody);
-          }).toList().firstOrNull;
-          if(findClassString != null){
+          String? findClassString = '$targetClassBody\n';
+          if(junkClassList.contains(findClassString)){
             junkCodeBodyList.add(findClassString);
           }
           // 遍历类成员
@@ -406,10 +489,8 @@ class _HomePageState extends State<HomePage> {
               //发现方法
               // print('发现方法: ${member.name}');
               String targetMethodBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
-              String? findMethodString = junkMethodList.where((e){
-                return e.contains(targetMethodBody);
-              }).toList().firstOrNull;
-              if(findMethodString != null){
+              String? findMethodString = '$targetMethodBody\n';
+              if(junkMethodList.contains(findMethodString)){
                 junkCodeBodyList.add(findMethodString);
               }
             }
@@ -417,10 +498,8 @@ class _HomePageState extends State<HomePage> {
               //发现字段
               // print('发现字段: ${member.fields}');
               String targetFieldBody = fileCodeString.substring(member.beginToken.charOffset, member.endToken.charEnd);
-              String? findFieldString = junkFieldsList.where((e){
-                return e.contains(targetFieldBody);
-              }).toList().firstOrNull;
-              if(findFieldString != null){
+              String? findFieldString = '$targetFieldBody\n';
+              if(junkFieldsList.contains(findFieldString)){
                 junkCodeBodyList.add(findFieldString);
               }
             }
@@ -429,10 +508,8 @@ class _HomePageState extends State<HomePage> {
           //发现顶级函数
           // print('发现顶级函数: ${declaration.name}');
           String targetTopMethodBody = fileCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
-          String? findMethodString = junkMethodList.where((e){
-            return e.contains(targetTopMethodBody);
-          }).toList().firstOrNull;
-          if(findMethodString != null){
+          String? findMethodString = '$targetTopMethodBody\n';
+          if(junkMethodList.contains(findMethodString)){
             junkCodeBodyList.add(findMethodString);
           }
         }
@@ -440,6 +517,9 @@ class _HomePageState extends State<HomePage> {
 
       String newFileCodeString = fileCodeString;
       for(String junkCode in junkCodeBodyList){
+        newFileCodeString = newFileCodeString.replaceAll(junkCode, '');
+      }
+      for(String junkCode in invokeCodeList){
         newFileCodeString = newFileCodeString.replaceAll(junkCode, '');
       }
       file.writeAsStringSync(newFileCodeString);
