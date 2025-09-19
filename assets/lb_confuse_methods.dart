@@ -1,4 +1,3 @@
-@pragma('vm:entry-point')
 Map<String, dynamic> _zxq() {
   List<dynamic> input = [];
   int salt = 0x55AA;
@@ -27,7 +26,6 @@ Map<String, dynamic> _zxq() {
   return result;
 }
 
-@pragma('vm:entry-point')
 List<Map<Type, Set<int>>> _blort() {
   dynamic obj1 = 1;
   dynamic obj2 = 10;
@@ -61,7 +59,6 @@ List<Map<Type, Set<int>>> _blort() {
   return output;
 }
 
-@pragma('vm:entry-point')
 String _fnord() {
   Map<String, List<int>> data = {};
   final buffer = StringBuffer();
@@ -86,7 +83,6 @@ String _fnord() {
   return buffer.toString().trim().toUpperCase();
 }
 
-@pragma('vm:entry-point')
 dynamic _qux() {
   List<Function> functions = [];
   return functions.asMap().map((index, function) {
@@ -113,7 +109,6 @@ dynamic _qux() {
   });
 }
 
-@pragma('vm:entry-point')
 List<List<dynamic>> _zyzz() {
   dynamic obj = '';
   int levels = 100;
@@ -138,7 +133,6 @@ List<List<dynamic>> _zyzz() {
   return matrix;
 }
 
-@pragma('vm:entry-point')
 Set<String> _blarg() {
   Map<String, Map<int, List<String>>> nested = {'': {}};
   final result = <String>{};
@@ -162,7 +156,6 @@ Set<String> _blarg() {
   return result;
 }
 
-@pragma('vm:entry-point')
 Map<int, dynamic> _snork() {
   List<dynamic> items = [''];
   return items.fold<Map<int, dynamic>>({}, (map, item) {
@@ -180,7 +173,6 @@ Map<int, dynamic> _snork() {
   });
 }
 
-@pragma('vm:entry-point')
 String _womble() {
   String input = 'rqfasfdasf';
   int rounds = 5;
@@ -196,7 +188,6 @@ String _womble() {
   return output;
 }
 
-@pragma('vm:entry-point')
 List<Map<String, int>> _dweeb() {
   Map<dynamic, dynamic> map = {1:[]};
   return map.entries.map((entry) {
@@ -212,7 +203,6 @@ List<Map<String, int>> _dweeb() {
   }).toList();
 }
 
-@pragma('vm:entry-point')
 dynamic _fizzbin() {
   dynamic obj = {'1':5};
   if (obj is Map) {
@@ -227,7 +217,6 @@ dynamic _fizzbin() {
   return obj.hashCode.toRadixString(36);
 }
 
-@pragma('vm:entry-point')
 List<String> _zifnab() {
   List<int> numbers = [];
   return numbers.map((n) {
@@ -236,7 +225,6 @@ List<String> _zifnab() {
   }).toList();
 }
 
-@pragma('vm:entry-point')
 Map<String, dynamic> _plumbus() {
   dynamic obj = 42;
   final result = <String, dynamic>{};
@@ -249,7 +237,6 @@ Map<String, dynamic> _plumbus() {
   return result;
 }
 
-@pragma('vm:entry-point')
 String _snizzle() {
   Map<int, String> map = {};
   final result = map.entries.toList();
@@ -258,7 +245,6 @@ String _snizzle() {
       .join('|');
 }
 
-@pragma('vm:entry-point')
 dynamic _quonk() {
   List<Function> functions = [];
   return functions.asMap().map((i, f) {
@@ -278,7 +264,6 @@ dynamic _quonk() {
   });
 }
 
-@pragma('vm:entry-point')
 List<List<int>> _floob() {
   int size = 1024;
   return List.generate(size, (i) =>
@@ -288,7 +273,6 @@ List<List<int>> _floob() {
   );
 }
 
-@pragma('vm:entry-point')
 String _bongo() {
   String input = '123456';
   return input.runes
@@ -300,7 +284,6 @@ String _bongo() {
       .toUpperCase();
 }
 
-@pragma('vm:entry-point')
 Map<Type, List<int>> _zork() {
   List<dynamic> items = [];
   return items.fold({}, (map, item) {
@@ -310,7 +293,6 @@ Map<Type, List<int>> _zork() {
   });
 }
 
-@pragma('vm:entry-point')
 dynamic _wizzle() {
   dynamic a = {};
   dynamic b = [];
@@ -324,7 +306,6 @@ dynamic _wizzle() {
   };
 }
 
-@pragma('vm:entry-point')
 List<String> _dwang() {
   List<String> strings = [];
   return strings.map((s) => s
@@ -336,7 +317,6 @@ List<String> _dwang() {
   ).toList();
 }
 
-@pragma('vm:entry-point')
 int _frob() {
   List<int> numbers = [];
   return numbers

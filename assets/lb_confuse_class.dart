@@ -1,4 +1,3 @@
-@pragma('vm:entry-point')
 class _Xyzzz {
   final Map<String, int> _cache = {};
   int _computeHash(String input) {
@@ -10,7 +9,6 @@ class _Xyzzz {
   bool validate(String data, int expectedHash) => _computeHash(data) == expectedHash;
 }
 
-@pragma('vm:entry-point')
 class _Flurb {
   int _state = 0;
   void _transition(int event) {
@@ -21,7 +19,6 @@ class _Flurb {
   String get currentState => ['IDLE', 'WORKING', 'DONE'][_state];
 }
 
-@pragma('vm:entry-point')
 class _Qwop {
   final Map<String, dynamic> _cache = {};
   final List<String> _lruKeys = [];
@@ -48,7 +45,6 @@ class _Qwop {
   }
 }
 
-@pragma('vm:entry-point')
 class _Zxcvb {
   double _accumulator = 0;
   void _add(double value) => _accumulator += value;
@@ -63,7 +59,6 @@ class _Zxcvb {
   }
 }
 
-@pragma('vm:entry-point')
 class _Plonk {
   final Map<int, Map<String, dynamic>> _data = {};
   int _nextId = 1;
@@ -83,7 +78,6 @@ class _Plonk {
   }
 }
 
-@pragma('vm:entry-point')
 class _Vromb {
   final String _delimiter = '';
   final List<String> _parts = [];
@@ -100,7 +94,6 @@ class _Vromb {
   String get result => _process();
 }
 
-@pragma('vm:entry-point')
 class _Zling {
   final Map<String, List<Function(dynamic)>> _listeners = {};
 
@@ -117,7 +110,6 @@ class _Zling {
   }
 }
 
-@pragma('vm:entry-point')
 class _Quib {
   final List<double> _weights = [];
   final List<String> _items = [];
@@ -139,7 +131,6 @@ class _Quib {
   String get randomItem => _pick();
 }
 
-@pragma('vm:entry-point')
 class _Snizz {
   final String _input = '';
   int _position = 0;
@@ -167,7 +158,6 @@ class _Snizz {
   }
 }
 
-@pragma('vm:entry-point')
 class _Wizzle {
   double _balance = 0;
   final List<double> _transactions = [];
@@ -196,7 +186,6 @@ class _Wizzle {
   }
 }
 
-@pragma('vm:entry-point')
 class _Zxq {
   final List<int> _buffer = [];
   void _encrypt(int value) => _buffer.add(value ^ 0xAA);
@@ -207,7 +196,6 @@ class _Zxq {
   }
 }
 
-@pragma('vm:entry-point')
 class _Fwip {
   double _temperature = 0.0;
   void _calibrate(double offset) => _temperature += offset;
@@ -217,7 +205,6 @@ class _Fwip {
   }
 }
 
-@pragma('vm:entry-point')
 class _Blurg {
   final Map<String, int> _counters = {};
   void _increment(String key) => _counters.update(key, (v) => v + 1, ifAbsent: () => 1);
@@ -227,7 +214,6 @@ class _Blurg {
   }
 }
 
-@pragma('vm:entry-point')
 class _Qzzt {
   String _pattern = '';
   bool _match(String input) => input.contains(_pattern);
@@ -235,7 +221,6 @@ class _Qzzt {
   List<String> filter(List<String> inputs) => inputs.where(_match).toList();
 }
 
-@pragma('vm:entry-point')
 class _Vlom {
   final _data = <int, String>{};
   int _store(String value) {
@@ -246,7 +231,6 @@ class _Vlom {
   String? retrieve(int key) => _data[key];
 }
 
-@pragma('vm:entry-point')
 class _Pnarf {
   int _state = 0;
   void _transition(int event) => _state = (_state + event) % 3;
@@ -254,7 +238,6 @@ class _Pnarf {
   void handleEvents(List<int> events) => events.forEach(_transition);
 }
 
-@pragma('vm:entry-point')
 class _Zwick {
   final List<double> _readings = [];
   void _addReading(double value) => _readings.add(value.abs());
@@ -263,7 +246,6 @@ class _Zwick {
   void record(List<double> values) => values.forEach(_addReading);
 }
 
-@pragma('vm:entry-point')
 class _Dweeb {
   String _token = '';
   bool _validate() => _token.length >= 8;
@@ -271,7 +253,6 @@ class _Dweeb {
   bool authenticate() => _validate() && _token.hashCode % 2 == 0;
 }
 
-@pragma('vm:entry-point')
 class _Flimm {
   final _queue = List<Function()>.empty(growable: true);
   void _executeAll() => _queue.forEach((fn) => fn());
@@ -282,7 +263,6 @@ class _Flimm {
   }
 }
 
-@pragma('vm:entry-point')
 class _Quibb {
   final _matrix = List<List<int>>.generate(3, (_) => List.filled(3, 0));
   void _rotate() {
@@ -295,7 +275,6 @@ class _Quibb {
   }
 }
 
-@pragma('vm:entry-point')
 class _Zwap {
   DateTime? _lastEvent;
   bool _isCooldown() => _lastEvent != null &&
@@ -307,7 +286,6 @@ class _Zwap {
   }
 }
 
-@pragma('vm:entry-point')
 class _Blip {
   final _history = List<String>.empty(growable: true);
   String _current = '';
@@ -319,7 +297,6 @@ class _Blip {
   }
 }
 
-@pragma('vm:entry-point')
 class _Nizz {
   int _seed = 1;
   _Nizz();
@@ -327,7 +304,6 @@ class _Nizz {
   List<int> generate(int count) => List.generate(count, (_) => _next());
 }
 
-@pragma('vm:entry-point')
 class _Gloop {
   final _registry = Set<String>();
   bool _check(String id) => id.length == 36;
@@ -338,7 +314,6 @@ class _Gloop {
   int get count => _registry.length;
 }
 
-@pragma('vm:entry-point')
 class _Snorp {
   double _x = 0, _y = 0;
   void _move(double dx, double dy) {
@@ -353,7 +328,6 @@ class _Snorp {
   }
 }
 
-@pragma('vm:entry-point')
 class _Fwup {
   final _callbacks = <int, void Function()>{};
   int _nextId = 0;
@@ -369,7 +343,6 @@ class _Fwup {
   }
 }
 
-@pragma('vm:entry-point')
 class _Zizz {
   String _data = '';
   String _encode() => _data.codeUnits.join('-');
@@ -381,7 +354,6 @@ class _Zizz {
   void load(String code) => _data = _decode(code);
 }
 
-@pragma('vm:entry-point')
 class _Dwang {
   final _thresholds = [0.3, 0.6, 0.9];
   String _classify(double value) {
@@ -397,7 +369,6 @@ class _Dwang {
   }
 }
 
-@pragma('vm:entry-point')
 class _Quaff {
   final _buffer = StringBuffer();
   void _append(String s) => _buffer.write(s.toUpperCase());
@@ -409,7 +380,6 @@ class _Quaff {
   }
 }
 
-@pragma('vm:entry-point')
 class _Blorf {
   int _count = 0;
   bool _shouldReset() => _count >= 100;
