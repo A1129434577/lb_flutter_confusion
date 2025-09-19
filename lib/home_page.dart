@@ -304,6 +304,7 @@ class _HomePageState extends State<HomePage> {
       //遍历所有顶级声明
       for (final declaration in compilationUnit.declarations) {
         List<String> thisClassInvokeMethodList = [], thisClassTargetMethodBodys = [];
+        List<String> thisClassStaticInvokeMethodList = [], thisClassStaticTargetMethodBodys = [];
 
         if (declaration is ClassDeclaration) {
           //发现类
@@ -326,10 +327,20 @@ class _HomePageState extends State<HomePage> {
               if(junkMethodList.contains(methodBody)){
                 //如果是垃圾代码，加入调用列表
                 String invokeMethodString = '${member.name}()';
-                thisClassInvokeMethodList.add(invokeMethodString);
+                if(member.isStatic) {
+                  thisClassStaticInvokeMethodList.add(invokeMethodString);
+                }else {
+                  thisClassInvokeMethodList.add(invokeMethodString);
+                }
               }else{
-                String methodBody = fileCodeString.substring(member.body.beginToken.charOffset, member.body.endToken.charEnd);
-                thisClassTargetMethodBodys.add(methodBody);
+                String methodBody = fileCodeString.substring(
+                    member.body.beginToken.charOffset,
+                    member.body.endToken.charEnd);
+                if(member.isStatic) {
+                  thisClassStaticTargetMethodBodys.add(methodBody);
+                }else{
+                  thisClassTargetMethodBodys.add(methodBody);
+                }
               }
             }
           }
@@ -343,9 +354,11 @@ class _HomePageState extends State<HomePage> {
             //如果是垃圾代码，加入调用列表
             String invokeMethodString = '${declaration.name}()';
             thisClassInvokeMethodList.add(invokeMethodString);
+            thisClassStaticInvokeMethodList.add(invokeMethodString);
           }
         }
         classInvokeMethodMap[thisClassTargetMethodBodys] = [thisFileInvokeClassList, thisClassInvokeMethodList];
+        classInvokeMethodMap[thisClassStaticTargetMethodBodys] = [thisFileInvokeClassList, thisClassStaticInvokeMethodList];
       }
       Map<String, String> targetInvokeMethodRelationshipInfo = {};
 
@@ -358,19 +371,32 @@ class _HomePageState extends State<HomePage> {
         List<int> randomInvokeMethodIndexList = [];
         for(String targetMethod in targetMethodList){
           List lines = targetMethod.split(';');
-          int targetIndex = random.nextInt(lines.length);
-          int invokeClassIndex;
-          do {
-            invokeClassIndex = random.nextInt(invokeClassList.length);
-          } while (randomInvokeClassIndexList.contains(invokeClassIndex));
-          lines.insert(targetIndex, '\n${invokeClassList[invokeClassIndex]}');
+          if(lines.length>2){
+            if(invokeClassList.isNotEmpty) {
+              int targetIndex;
+              do {
+                targetIndex = random.nextInt(lines.length);
+              } while (targetIndex<1);
+              int invokeClassIndex;
+              do {
+                invokeClassIndex = random.nextInt(invokeClassList.length);
+              } while (randomInvokeClassIndexList.contains(invokeClassIndex));
+              lines.insert(targetIndex, '\n${invokeClassList[invokeClassIndex]}');
+            }
 
-          int targetIndex1 = random.nextInt(lines.length);
-          int invokeMethodIndex;
-          do {
-            invokeMethodIndex = random.nextInt(invokeMethodList.length);
-          } while (randomInvokeMethodIndexList.contains(invokeMethodIndex));
-          lines.insert(targetIndex1, '\n${invokeMethodList[invokeMethodIndex]}');
+            if(invokeMethodList.isNotEmpty){
+              int targetIndex;
+              do {
+                targetIndex = random.nextInt(lines.length);
+              } while (targetIndex<1);
+              int invokeMethodIndex;
+              do {
+                invokeMethodIndex = random.nextInt(invokeMethodList.length);
+              } while (randomInvokeMethodIndexList.contains(invokeMethodIndex));
+              lines.insert(targetIndex, '\n${invokeMethodList[invokeMethodIndex]}');
+            }
+          }
+
 
           String newMethodBody = lines.join(';');
           targetInvokeMethodRelationshipInfo[targetMethod] = newMethodBody;
@@ -432,7 +458,7 @@ class _HomePageState extends State<HomePage> {
         String junkClassBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkClassBody += '\n';
         junkClassList.add(junkClassBody);
-        invokeCodeList.add('${declaration.name}();\n');
+        invokeCodeList.add('\n${declaration.name}();');
         // 遍历类成员
         for (final member in declaration.members) {
           if (member is MethodDeclaration) {
@@ -454,7 +480,7 @@ class _HomePageState extends State<HomePage> {
         String junkTopMethodBody = junkAllCodeString.substring(declaration.beginToken.charOffset, declaration.endToken.charEnd);
         junkTopMethodBody += '\n';
         junkMethodList.add(junkTopMethodBody);
-        invokeCodeList.add('${declaration.name}();\n');
+        invokeCodeList.add('\n${declaration.name}();');
       }
       else if(declaration is TopLevelVariableDeclaration) {
         //发现字段
